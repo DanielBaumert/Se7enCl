@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/Se7enCl/.vs/Se7enCl/v16/Server/sqlite3
+/Se7enCl/bin/x64
+/Se7enCl/obj

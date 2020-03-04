@@ -1,4 +1,4 @@
-﻿namespace Se7enCl
+﻿namespace Se7en.OpenCl
 {
     public readonly struct IndexElement<T> where T : unmanaged
     {

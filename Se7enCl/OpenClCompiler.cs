@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Se7en.OpenCl.Api.Enum;
+using Se7en.OpenCl.Api.Native;
+using System;
 
-namespace Se7enCl
+namespace Se7en.OpenCl
 {
     public readonly unsafe struct OpenClCompiler : IDisposable
     {
@@ -23,16 +25,18 @@ namespace Se7enCl
 
         static OpenClCompiler()
         {
-            OpenCl.GetPlatformIDs(0, null, out PlatformCount);
+             Cl.GetPlatformIDs(0, null, out PlatformCount);
             Platforms = new Platform[PlatformCount];
-            OpenCl.GetPlatformIDs(PlatformCount, Platforms, out _);
+             Cl.GetPlatformIDs(PlatformCount, Platforms, out _);
         }
 
-        public OpenClCompiler(string source, DeviceType type = DeviceType.Gpu) 
-            : this(GetDevice(ref type), source) {
+        public OpenClCompiler(string source, DeviceType type = DeviceType.Gpu)
+            : this(GetDevice(ref type), source)
+        {
         }
         public OpenClCompiler(string source, string name)
-            : this(GetDevice(name), source){
+            : this(GetDevice(name), source)
+        {
         }
 
         public OpenClCompiler(Device device, string source)
@@ -48,35 +52,71 @@ namespace Se7enCl
             IsAtomicSupported = (capabilities & SVMCapabilities.SvmAtomics) == SVMCapabilities.SvmAtomics;
 
             Source = source;
-            _program = new Program(OpenCl.CreateProgramWithSource(_ctx, 1, new string[] { source }, null, out ErrorCode error));
-            OpenCl.BuildProgram(_program, 1, new[] { _device }, string.Empty, null, IntPtr.Zero);
+            _program = new Program(Cl.CreateProgramWithSource(_ctx, 1, new string[] { source }, null, out ErrorCode error));
+            Cl.BuildProgram(_program, 1, new[] { _device }, string.Empty, null, IntPtr.Zero);
 
             KernelCount = _program.NumKernels;
             Methodes = _program.KernelNames;
 
             _kernels = new Kernel[KernelCount];
 
-            OpenCl.CreateKernelsInProgram(_program, KernelCount, _kernels, out _);
+            Cl.CreateKernelsInProgram(_program, KernelCount, _kernels, out _);
         }
-
-#if X64
-        public void AllocSvmMemory(long size)
+        /// <summary>
+        /// Alloc shared virtual memory
+        /// </summary>
+        /// <param name="size">Size to alloc in bytes</param>
+        /// <returns>A pointer to the shared virtual memory</returns>
+        public SvmPointer AllocSvmMemory(IntPtr size)
         {
-
+            SVMMemFlags flags = SVMMemFlags.ReadWrite;
+            if (IsFineGrainBufferSupported)
+            {
+                flags = SVMMemFlags.FineGrainBuffer;
+                if (IsAtomicSupported)
+                {
+                    flags |= SVMMemFlags.Atomic;
+                }
+            }
+            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
         }
-#elif X86
-        public void AllocSvmMemory(int size)
+        /// <summary>
+        /// Alloc shared virtual memory
+        /// </summary>
+        /// <param name="size">Size to alloc in bytes</param>
+        /// <param name="flags">Shared virtual memory attributes</param>
+        /// <returns>A pointer to the shared virtual memory</returns>
+        public SvmPointer AllocSvmMemory(IntPtr size, SVMMemFlags flags)
+            => new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
+        public SvmPointer<T> AllocSvmMemory<T>(IntPtr size)
+           where T : unmanaged
         {
-
+            SVMMemFlags flags = SVMMemFlags.ReadWrite;
+            if (IsFineGrainBufferSupported)
+            {
+                flags = SVMMemFlags.FineGrainBuffer;
+                if (IsAtomicSupported)
+                {
+                    flags |= SVMMemFlags.Atomic;
+                }
+            }
+            return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
         }
-#else
-        public SvmPointer AllocSvmMemory(IntPtr size, SVMMemFlags flags = SVMMemFlags.ReadWrite | SVMMemFlags.FineGrainBuffer)
-            => new SvmPointer(_ctx, OpenCl.SVMAlloc(_ctx, flags, size));
-        public SvmPointer<T> AllocSvmMemory<T>(IntPtr count, SVMMemFlags flags = SVMMemFlags.ReadWrite | SVMMemFlags.FineGrainBuffer) 
-            where T : unmanaged
-            => (SvmPointer<T>) new SvmPointer(_ctx, OpenCl.SVMAlloc(_ctx, flags, new IntPtr((long) count * sizeof(T))));
-#endif
-
+        /// <summary>
+        /// Alloc shared virtual memory
+        /// </summary>
+        /// <typeparam name="T">Unmanaged retrun type</typeparam>
+        /// <param name="size">Size to alloc in bytes</param>
+        /// <param name="flags">Shared virtual memory attributes</param>
+        /// <returns>A pointer to the shared virtual memory</returns>
+        public SvmPointer<T> AllocSvmMemory<T>(IntPtr size, SVMMemFlags flags)
+        where T : unmanaged
+        => (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+        /// <summary> 
+        /// Get a spezific __kernel method from the compiled programm by name
+        /// </summary>
+        /// <param name="methodName">Methode name</param>
+        /// <returns>Return a pointer to a kernel methode </returns>
         public OpenClBridge GetMethode(string methodName)
             => new OpenClBridge(_ctx, _device, _kernels.First(kernel => kernel.FunctionName == methodName));
 
@@ -89,7 +129,7 @@ namespace Se7enCl
                 {
                     if ((device.Type & type) == type)
                     {
-                            return device;
+                        return device;
                     }
                 }
             }
@@ -110,6 +150,9 @@ namespace Se7enCl
             }
             throw new Exception("target device type not found");
         }
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             foreach (Kernel kernel in _kernels)

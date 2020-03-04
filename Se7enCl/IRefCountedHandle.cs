@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Se7en.OpenCl.Api.Enum;
+using System;
 
-namespace Se7enCl
+namespace Se7en.OpenCl
 {
     internal interface IRefCountedHandle: IDisposable
     {

@@ -1,14 +1,69 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;net48;net45</TargetFrameworks>
+ <PropertyGroup>
+    <Language>en-US</Language>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    
+    <TargetFrameworks>netcoreapp3.1;netcoreapp3.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <PlatformTarget>x64</PlatformTarget>
+
+
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Authors>Daniel Baumert</Authors>
+    <Company>Se7en Software</Company>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+   
+    <Platforms>x64</Platforms>
+    <Configurations>Windows;Windows-Obfuscate;Windows-Debug;Linux;Linux-Obfuscate;Linux-Debug</Configurations>
+  </PropertyGroup>
+ 
+  <PropertyGroup Condition="'$(Configuration)'=='Windows'">
+    <DefineConstants>Windows</DefineConstants>
+    <Optimization>true</Optimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Windows-Obfuscate'">
+    <DefineConstants>Windows</DefineConstants>
+    <Obfuscate>true</Obfuscate>
+    <Optimization>true</Optimization>
+
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Windows-Debug'">
+    <DefineConstants>TRACE;DEBUG;Windows</DefineConstants>
+    <Optimization>false</Optimization>
+    <Obfuscate>false</Obfuscate>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)'=='Linux'">
+    <DefineConstants>Linux</DefineConstants>
+    <Optimization>true</Optimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Linux-Obfuscate'">
+    <DefineConstants>Linux</DefineConstants>
+    <Obfuscate>true</Obfuscate>
+    <Optimization>true</Optimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Linux-Debug'">
+    <DefineConstants>TRACE;DEBUG;Linux</DefineConstants>
+    <Optimization>false</Optimization>
+    <Obfuscate>false</Obfuscate>
   </PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="OpenCL.dll" />
+  <ItemGroup Condition="'$(Configuration)'=='Windows' Or '$(Configuration)'=='Windows-Obfuscate'Or'$(Configuration)'=='Windows-Debug'">
+    <None Remove="OpenCl.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Windows' Or '$(Configuration)'=='Windows-Obfuscate'Or'$(Configuration)'=='Windows-Debug'">
+    <EmbeddedResource Include="OpenCl.dll" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Linux' Or '$(Configuration)'=='Linux-Obfuscate'Or'$(Configuration)'=='Linux-Debug'">
+    <None Remove="libOpenCL.so" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Linux' Or '$(Configuration)'=='Linux-Obfuscate'Or'$(Configuration)'=='Linux-Debug'">
+    <EmbeddedResource Include="libOpenCL.so" />
   </ItemGroup>
 
 </Project>

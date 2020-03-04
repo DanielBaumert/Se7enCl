@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Se7en.OpenCl.Api.Enum;
+using Se7en.OpenCl.Api.Native;
 
-namespace Se7enCl
+namespace Se7en.OpenCl
 {
     /// <summary>
     /// Hold the GPU program ready to run
@@ -21,7 +23,7 @@ namespace Se7enCl
             Context = ctx;
             Kernel = kernel;
 
-            _commandQueue = new CommandQueue(OpenCl.CreateCommandQueue(ctx, device, CommandQueueProperties.None, out _));
+            _commandQueue = new CommandQueue(Cl.CreateCommandQueue(ctx, device, CommandQueueProperties.None, out _));
             Arguments = Kernel.NumArgs;
             _memObj = new IntPtr[Arguments];
             _memObjSize = (int*)Marshal.AllocHGlobal(Arguments * sizeof(int));
@@ -50,7 +52,6 @@ namespace Se7enCl
         /// <summary>
         /// 
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="argIndex"></param>
         /// <param name="length">length in bytes</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,15 +63,15 @@ namespace Se7enCl
                 if (*(memObjPtr + argIndex) == IntPtr.Zero)
                 {
                     *(_memObjSize + argIndex) = length;
-                    IntPtr lmem = (*(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, MemFlags.WriteOnly, length, IntPtr.Zero, out err));
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, lmem);
+                    IntPtr lmem = (*(memObjPtr + argIndex) = Cl.CreateBuffer(Context, MemFlags.WriteOnly, length, IntPtr.Zero, out err));
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, lmem);
                 }
                 else if (*(_memObjSize + argIndex) < length)
                 {
                     (*(Mem*)(memObjPtr + argIndex)).Dispose();
                     *(_memObjSize + argIndex) = length;
-                    IntPtr lmem = (*(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, MemFlags.WriteOnly, length, IntPtr.Zero, out err));
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, lmem);
+                    IntPtr lmem = (*(memObjPtr + argIndex) = Cl.CreateBuffer(Context, MemFlags.WriteOnly, length, IntPtr.Zero, out err));
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, lmem);
                 }
             }
         }
@@ -108,15 +109,15 @@ namespace Se7enCl
                 if (*(memObjPtr + argIndex) == IntPtr.Zero)
                 {
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, MemFlags.WriteOnly, size, IntPtr.Zero, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, MemFlags.WriteOnly, size, IntPtr.Zero, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
                 else if (*(_memObjSize + argIndex) < size)
                 {
                     (*(Mem*)(memObjPtr + argIndex)).Dispose();
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, MemFlags.WriteOnly, size, IntPtr.Zero, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, MemFlags.WriteOnly, size, IntPtr.Zero, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
             }
         }
@@ -134,7 +135,7 @@ namespace Se7enCl
             fixed (T* localBufferPtr = localBuffer)
             {
                 ErrorCode err;
-                if ((err = OpenCl.EnqueueReadBuffer(_commandQueue, *(memObjPtr + argIndex), true.ToInt(), 0, sizeof(T) * localBuffer.Length, localBufferPtr, 0, null, out Event @event)) == ErrorCode.Success)
+                if ((err = Cl.EnqueueReadBuffer(_commandQueue, *(memObjPtr + argIndex), 1, 0, sizeof(T) * localBuffer.Length, localBufferPtr, 0, null, out Event @event)) == ErrorCode.Success)
                 {
                     @event.WaitForComplete();
                 }
@@ -152,7 +153,7 @@ namespace Se7enCl
             fixed (IntPtr* memObjPtr = _memObj)
             {
                 ErrorCode err;
-                if ((err = OpenCl.EnqueueReadBuffer(_commandQueue, *(memObjPtr + argIndex), true.ToInt(), 0, *(_memObjSize + argIndex), localBuffer, 0, null, out Event @event)) == ErrorCode.Success)
+                if ((err = Cl.EnqueueReadBuffer(_commandQueue, *(memObjPtr + argIndex), 1, 0, *(_memObjSize + argIndex), localBuffer, 0, null, out Event @event)) == ErrorCode.Success)
                 {
                     @event.WaitForComplete();
                 }
@@ -167,12 +168,30 @@ namespace Se7enCl
         public void Execute(IntPtr[] workGroupSizePtr, uint workingDim = 1)
         {
             ErrorCode err;
-            if ((err = OpenCl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
+            if ((err = Cl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
                 throw new Exception($"{err}");
             }
             @event.WaitForComplete();
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetSvmArgs(params SvmPointer[] args)
+        {
+            ErrorCode err;
+            int count = args.Length;
+            fixed (SvmPointer* argsPtr = args)
+            {
+                for (uint i = 0; i < count; i++)
+                {
+                    if ((err = Cl.SetKernelArgSVMPointer(Kernel, i, *(argsPtr + i))) != ErrorCode.Success)
+                    {
+                        throw new Exception($"{err}");
+                    }
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetSvmArgs(uint[] argIndex = null, params SvmPointer[] args)
         {
             ErrorCode err;
@@ -181,7 +200,7 @@ namespace Se7enCl
             {
                 if (count != argIndex.Length)
                 {
-                    throw new IndexOutOfRangeException("");
+                    throw new IndexOutOfRangeException($"{nameof(argIndex)}.length != {nameof(args)}.length");
                 }
 
                 fixed (uint* argIndexPtr = argIndex)
@@ -189,26 +208,14 @@ namespace Se7enCl
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        if ((err = OpenCl.SetKernelArgSVMPointer(Kernel, *(argIndexPtr + i), *(argsPtr + i))) != ErrorCode.Success)
+                        if ((err = Cl.SetKernelArgSVMPointer(Kernel, *(argIndexPtr + i), *(argsPtr + i))) != ErrorCode.Success)
                         {
                             throw new Exception($"{err}");
                         }
                     }
                 }
             }
-            else
-            {
-                fixed (SvmPointer* argsPtr = args)
-                {
-                    for (uint i = 0; i < count; i++)
-                    {
-                        if ((err = OpenCl.SetKernelArgSVMPointer(Kernel, i, *(argsPtr + i))) != ErrorCode.Success)
-                        {
-                            throw new Exception($"{err}");
-                        }
-                    }
-                }
-            }
+            throw new ArgumentNullException(nameof(argIndex));
         }
         /// <summary>
         /// Runing the GPU program
@@ -218,8 +225,9 @@ namespace Se7enCl
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Execute(IntPtr[] workGroupSizePtr, SvmPointer[] args, uint workingDim = 1)
         {
+            SetSvmArgs(args);
             ErrorCode err;
-            if ((err = OpenCl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
+            if ((err = Cl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
                 throw new Exception($"{err}");
             }
@@ -236,17 +244,17 @@ namespace Se7enCl
                 if (*(memObjPtr + argIndex) == IntPtr.Zero)
                 {
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, flags, size, (IntPtr)mem, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, flags, size, (IntPtr)mem, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
                 else if (*(_memObjSize + argIndex) < size)
                 {
                     (*(Mem*)(memObjPtr + argIndex)).Dispose();
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, flags, size, (IntPtr)mem, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, flags, size, (IntPtr)mem, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
-                err = OpenCl.EnqueueWriteBuffer(_commandQueue, *(memObjPtr + argIndex), true.ToInt(), IntPtr.Zero, size, (IntPtr)mem, 0, null, out _);
+                err = Cl.EnqueueWriteBuffer(_commandQueue, *(memObjPtr + argIndex), 1, IntPtr.Zero, size, (IntPtr)mem, 0, null, out _);
             }
         }
 
@@ -262,20 +270,20 @@ namespace Se7enCl
                 if (*(memObjPtr + argIndex) == IntPtr.Zero)
                 {
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, flags, size, (IntPtr)itemsPtr, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, flags, size, (IntPtr)itemsPtr, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
                 else if (*(_memObjSize + argIndex) < size)
                 {
                     (*(Mem*)(memObjPtr + argIndex)).Dispose();
                     *(_memObjSize + argIndex) = size;
-                    *(memObjPtr + argIndex) = OpenCl.CreateBuffer(Context, flags, size, (IntPtr)itemsPtr, out err);
-                    err = OpenCl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
+                    *(memObjPtr + argIndex) = Cl.CreateBuffer(Context, flags, size, (IntPtr)itemsPtr, out err);
+                    err = Cl.SetKernelArg(Kernel, (uint)argIndex, IntPtr.Size, (IntPtr)(memObjPtr + argIndex));
                 }
-                err = OpenCl.EnqueueWriteBuffer(_commandQueue, *(memObjPtr + argIndex), true.ToInt(), IntPtr.Zero, size, (IntPtr)itemsPtr, 0, null, out _);
+                err = Cl.EnqueueWriteBuffer(_commandQueue, *(memObjPtr + argIndex), 1, IntPtr.Zero, size, (IntPtr)itemsPtr, 0, null, out _);
             }
         }
-       
+
         public void Dispose()
         {
             _commandQueue.Dispose();
