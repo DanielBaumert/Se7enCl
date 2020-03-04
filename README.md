@@ -1,6 +1,35 @@
 # Se7enCl
 OpenCl in a easy way to use
-
+ 
+## Compile 
+### Linux
+------------------
+#### Linux release 
+```cmd
+> dotnet run --configuration Linux
+```
+#### Linux release obfuscate
+```cmd
+> dotnet run --configuration Linux-Obfuscate
+```
+#### Linux debug
+```cmd
+> dotnet run --configuration Linux-Debug
+```
+### Windows
+------------------
+#### Windows release 
+```cmd
+> dotnet run --configuration Windows
+```
+#### Windows release obfuscate
+```cmd
+> dotnet run --configuration Windows-Obfuscate
+```
+#### Windows debug
+```cmd
+> dotnet run --configuration Windows-Debug
+```
 
 ## Example 
 
