@@ -9,7 +9,6 @@
     <LangVersion>latest</LangVersion>
     <PlatformTarget>x64</PlatformTarget>
 
-
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <Authors>Daniel Baumert</Authors>
@@ -17,20 +16,22 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
    
     <Platforms>x64</Platforms>
-    <Configurations>Windows;Windows-Obfuscate;Windows-Debug;Linux;Linux-Obfuscate;Linux-Debug</Configurations>
+    <Configurations>Debug;Windows;Windows-Obfuscate;Windows-Debug;Linux;Linux-Obfuscate;Linux-Debug</Configurations>
   </PropertyGroup>
- 
+  
+  
   <PropertyGroup Condition="'$(Configuration)'=='Windows'">
-    <DefineConstants>Windows</DefineConstants>
     <Optimization>true</Optimization>
+    <DefineConstants>Windows</DefineConstants>
   </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)'=='Windows-Obfuscate'">
     <DefineConstants>Windows</DefineConstants>
     <Obfuscate>true</Obfuscate>
     <Optimization>true</Optimization>
-
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='Windows-Debug'">
+  
+  <PropertyGroup Condition="'$(Configuration)'=='Windows-Debug'or'$(Configuration)'=='Debug'">
     <DefineConstants>TRACE;DEBUG;Windows</DefineConstants>
     <Optimization>false</Optimization>
     <Obfuscate>false</Obfuscate>
@@ -40,11 +41,13 @@
     <DefineConstants>Linux</DefineConstants>
     <Optimization>true</Optimization>
   </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)'=='Linux-Obfuscate'">
     <DefineConstants>Linux</DefineConstants>
     <Obfuscate>true</Obfuscate>
     <Optimization>true</Optimization>
   </PropertyGroup>
+  
   <PropertyGroup Condition="'$(Configuration)'=='Linux-Debug'">
     <DefineConstants>TRACE;DEBUG;Linux</DefineConstants>
     <Optimization>false</Optimization>

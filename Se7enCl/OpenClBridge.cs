@@ -192,11 +192,11 @@ namespace Se7en.OpenCl
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetSvmArgs(uint[] argIndex = null, params SvmPointer[] args)
+        public void SetSvmArgs(uint[] argIndex, params SvmPointer[] args)
         {
             ErrorCode err;
             int count = args.Length;
-            if (argIndex != null)
+            if (argIndex == null)
             {
                 if (count != argIndex.Length)
                 {
@@ -214,8 +214,10 @@ namespace Se7en.OpenCl
                         }
                     }
                 }
+            } else
+            {
+                SetSvmArgs(args);
             }
-            throw new ArgumentNullException(nameof(argIndex));
         }
         /// <summary>
         /// Runing the GPU program

@@ -26,16 +26,16 @@ namespace Se7en.OpenCl
         static OpenClCompiler()
         {
              Cl.GetPlatformIDs(0, null, out PlatformCount);
-            Platforms = new Platform[PlatformCount];
+             Platforms = new Platform[PlatformCount];
              Cl.GetPlatformIDs(PlatformCount, Platforms, out _);
         }
 
         public OpenClCompiler(string source, DeviceType type = DeviceType.Gpu)
-            : this(GetDevice(ref type), source)
+            : this(Device.GetDevice(Platforms, type), source)
         {
         }
         public OpenClCompiler(string source, string name)
-            : this(GetDevice(name), source)
+            : this(Device.GetDevice(Platforms, name), source)
         {
         }
 
@@ -94,7 +94,7 @@ namespace Se7en.OpenCl
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
             if (IsFineGrainBufferSupported)
             {
-                flags = SVMMemFlags.FineGrainBuffer;
+                flags |= SVMMemFlags.FineGrainBuffer;
                 if (IsAtomicSupported)
                 {
                     flags |= SVMMemFlags.Atomic;
@@ -111,46 +111,21 @@ namespace Se7en.OpenCl
         /// <returns>A pointer to the shared virtual memory</returns>
         public SvmPointer<T> AllocSvmMemory<T>(IntPtr size, SVMMemFlags flags)
         where T : unmanaged
-        => (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+        {
+            return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+        }
+
         /// <summary> 
         /// Get a spezific __kernel method from the compiled programm by name
         /// </summary>
         /// <param name="methodName">Methode name</param>
         /// <returns>Return a pointer to a kernel methode </returns>
         public OpenClBridge GetMethode(string methodName)
-            => new OpenClBridge(_ctx, _device, _kernels.First(kernel => kernel.FunctionName == methodName));
+        {
+            return new OpenClBridge(_ctx, _device, _kernels.First(kernel => kernel.FunctionName == methodName));
+        }
 
-        private static Device GetDevice(ref DeviceType type)
-        {
-            foreach (Platform platform in Platforms)
-            {
-                Device[] devices = platform.GetDevices();
-                foreach (Device device in devices)
-                {
-                    if ((device.Type & type) == type)
-                    {
-                        return device;
-                    }
-                }
-            }
-            throw new Exception("target device type not found");
-        }
-        private static Device GetDevice(string name)
-        {
-            foreach (Platform platform in Platforms)
-            {
-                Device[] devices = platform.GetDevices();
-                foreach (Device device in devices)
-                {
-                    if (device.Name.Contains(name))
-                    {
-                        return device;
-                    }
-                }
-            }
-            throw new Exception("target device type not found");
-        }
-        /// <summary>
+       
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()

@@ -10,8 +10,43 @@ namespace Se7en.OpenCl
     {
 
         public readonly IntPtr Handle;
+
+        public static Device GetDevice(Platform[] platforms, DeviceType type)
+        {
+            foreach (Platform platform in platforms)
+            {
+                Device[] devices = platform.GetDevices();
+                foreach (Device device in devices)
+                {
+                    if ((device.Type & type) == type)
+                    {
+                        return device;
+                    }
+                }
+            }
+            throw new Exception("target device type not found");
+        }
+        public static Device GetDevice(Platform[] platforms, string name)
+        {
+            foreach (Platform platform in platforms)
+            {
+                Device[] devices = platform.GetDevices();
+                foreach (Device device in devices)
+                {
+                    if (device.Name.Contains(name))
+                    {
+                        return device;
+                    }
+                }
+            }
+            throw new Exception("target device type not found");
+        }
+        /// <summary>
+        //Ctor
         internal Device(IntPtr handle)
-            => Handle = handle;
+        {
+            Handle = handle;
+        }
 
         /// <summary>
         /// A unique device vendor identifier.<br/>
@@ -210,22 +245,14 @@ namespace Se7en.OpenCl
         public readonly uint MaxReadWriteImageArgs => Utils.GetTInfo<DeviceInfo, uint>(Handle, DeviceInfo.MaxReadWriteImageArgs, Cl.GetDeviceInfo);
 
         
-#pragma warning disable CS1570 // XML comment has badly formed XML -- 'End tag 'summary' does not match the start tag 'Minor_Version'.'
-/// <summary>
+        /// <summary>
         /// The intermediate languages that can be supported by clCreateProgramWithIL for this device.<br/>
         /// Returns a space-separated list of IL version strings of the form <IL_Prefix>_<Major_Version>.<br/>
         /// <Minor_Version>.<br/>
         /// For OpenCL 2.<br/>
         /// 2, SPIR-V is a required IL prefix.
         /// </summary>
-#pragma warning disable CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'IL_Prefix'.'
-#pragma warning disable CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'summary'.'
-#pragma warning disable CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'Major_Version'.'
         public readonly string IlVersion => Utils.GetTInfo<DeviceInfo, byte>(Handle, DeviceInfo.IlVersion, Cl.GetDeviceInfo, out _).ToStrg();
-#pragma warning restore CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'IL_Prefix'.'
-#pragma warning restore CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'summary'.'
-#pragma warning restore CS1570 // XML comment has badly formed XML -- 'Expected an end tag for element 'Major_Version'.'
-#pragma warning restore CS1570 // XML comment has badly formed XML -- 'End tag 'summary' does not match the start tag 'Minor_Version'.'
 
         /// <summary>
         /// Max width of 2D image or 1D image not created from a buffer object in pixels.<br/>
@@ -664,6 +691,7 @@ namespace Se7en.OpenCl
         /// If cl_khr_subgroups is supported by the device this must return CL_TRUE.
         /// </summary>
         public readonly bool SubGroupIndependentForwardProgress => Utils.GetTInfo<DeviceInfo, bool>(Handle, DeviceInfo.SubGroupIndependentForwardProgress, Cl.GetDeviceInfo);
+
 
         public unsafe Context CreateContext()
             => new Context(Cl.CreateContext(null, 1, new[] { this }, null, IntPtr.Zero, out ErrorCode _));
