@@ -6,3 +6,5 @@
 /Se7enCl/.vs/Se7enCl/v16/Server/sqlite3
 /Se7enCl/bin/x64
 /Se7enCl/obj
+/Se7en.OpenCl.Test/bin/Debug/netcoreapp3.1
+/Se7en.OpenCl.Test/obj
