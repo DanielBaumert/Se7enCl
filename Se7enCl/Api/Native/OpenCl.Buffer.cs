@@ -7,7 +7,7 @@ namespace Se7en.OpenCl.Api.Native
     public unsafe static partial class Cl
     {
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateBuffer")]
-        public static extern IntPtr CreateBuffer(IntPtr context,
+        public static extern Mem CreateBuffer(IntPtr context,
                                                   MemFlags flags,
                                                   long size, 
                                                   IntPtr hostPtr,
@@ -26,7 +26,7 @@ namespace Se7en.OpenCl.Api.Native
                                                              IntPtr buffer,
                                                              int blockingWrite,
                                                              IntPtr offsetInBytes,
-                                                             int lengthInBytes,
+                                                             long lengthInBytes,
                                                              IntPtr ptr,
                                                              uint numEventsInWaitList,
                                                              [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 6)] Event[] eventWaitList,

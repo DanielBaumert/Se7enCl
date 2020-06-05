@@ -652,8 +652,7 @@ namespace Se7en.OpenCl
         /// Memory consistency is guaranteed at synchronization points without need for clEnqueueMapBuffer and clEnqueueUnmapMemObject.<br/>
         /// CL_DEVICE_SVM_FINE_GRAIN_SYSTEM - Support for sharing the host&#8217;s entire virtual memory including memory allocated using malloc.<br/>
         /// Memory consistency is guaranteed at synchronization points.<br/>
-        /// CL_DEVICE_SVM_ATOMICS - Support for the OpenCL 2.<br/>
-        /// 0 atomic operations that provide memory consistency across the host and all OpenCL devices supporting fine-grain SVM allocations.<br/>
+        /// CL_DEVICE_SVM_ATOMICS - Support for the OpenCL 2.0 atomic operations that provide memory consistency across the host and all OpenCL devices supporting fine-grain SVM allocations.<br/>
         /// The mandated minimum capability is CL_DEVICE_SVM_COARSE_GRAIN_BUFFER.
         /// </summary>
         public readonly SVMCapabilities SvmCapabilities => Utils.GetTInfo<DeviceInfo, SVMCapabilities>(Handle, DeviceInfo.SvmCapabilities, Cl.GetDeviceInfo);

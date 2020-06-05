@@ -43,5 +43,4 @@ namespace Se7en.OpenCl
         public static implicit operator IntPtr(Mem memObj)
             => memObj.Handle;
     }
-
 }
