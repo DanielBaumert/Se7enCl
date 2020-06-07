@@ -56,7 +56,7 @@ namespace Se7en.OpenCl
 
             _queue = Cl.CreateCommandQueue(_ctx, _device, CommandQueueProperties.None, out _);
         }
-        public SvmPointer AllocSvmMemory(long length)
+        internal SvmPointer AllocSvmMemory(long length, uint alignment)
         {
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
 
@@ -67,30 +67,14 @@ namespace Se7en.OpenCl
                 {
                     flags |= SVMMemFlags.Atomic;
                 }
-
-                return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
             }
-
-            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
+            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length), alignment), length);
         }
+
         public SvmPointer<T> AllocSvmMemory<T>(long count)
            where T : unmanaged
         {
-            SVMMemFlags flags = SVMMemFlags.ReadWrite;
-
-            long length = count * sizeof(T);
-            if (_device.IsFineGrainBufferSupported)
-            {
-                flags |= SVMMemFlags.FineGrainBuffer;
-                if (_device.IsAtomicSupported)
-                {
-                    flags |= SVMMemFlags.Atomic;
-                }
-
-                return (SvmPointer<T>) new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
-
-            } 
-            return (SvmPointer<T>) new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
+            return new SvmPointer<T>(AllocSvmMemory(count * sizeof(T), (uint) sizeof(T)));
         }
       
         /// <summary> 

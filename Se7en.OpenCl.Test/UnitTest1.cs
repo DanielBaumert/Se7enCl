@@ -168,7 +168,7 @@ namespace Se7en.OpenCl.Test
         }
 
         [TestMethod]
-        public void TestMethod1()
+        public void TestCode1()
         {
 
             const string SOURCE_CODE = @"
@@ -198,6 +198,52 @@ namespace Se7en.OpenCl.Test
                 for (int i = 0; i < length; i++)
                 {
                     Assert.AreEqual(a[i] + b[i], c[i]);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestCode2()
+        {
+             
+            const string SOURCE_CODE = @"
+                __constant float4 GRAY_SCALE_FILTER_MATRIX = (float4) (0.30, 0.59, 0.11, 0);
+
+                __kernel void grayscale(__global char4* a, __global char4* b)
+                {
+	                int pos = get_global_id(0);
+
+	                a[pos] = 5;
+                }";
+
+            /*
+                      char4 inPixelPtr = input[pos];
+                      char4 grayScaledPixel = convert_char4(convert_float4(inPixelPtr) * GRAY_SCALE_FILTER_MATRIX);
+                  */
+
+            const int length = 10;
+
+            using (OpenClCompiler builder = new OpenClCompiler(SOURCE_CODE, DeviceType.Gpu)) // <- device selector ("*GTX*")
+            using (OpenClBridge bridge = builder.GetMethode("grayscale"))                   // methode capture
+            using (SvmPointer<int> a = builder.AllocSvmMemory<int>(length))             // buffer init
+            using (SvmPointer<int> b = builder.AllocSvmMemory<int>(length))             // buffer init
+            {
+                bridge.LockSvmForGPU(a, b);
+                //init values
+                for (int i = 1; i <= length; i++)
+                {
+                    a[i-1] = b[i - 1] = i;
+                }
+                bridge.UnlockSvmGPU(a, b);
+
+                bridge.SetSvmArgs(a, b);
+                bridge.Execute(new IntPtr[] { (IntPtr)length });        // exec
+
+                //check values
+                for (int i = 0; i < length; i++)
+                {
+                    Console.WriteLine(a[i]);
+                    Assert.AreEqual(a[i], 0);
                 }
             }
         }

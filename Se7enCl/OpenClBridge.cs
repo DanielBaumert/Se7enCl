@@ -173,7 +173,7 @@ namespace Se7en.OpenCl
             ErrorCode err;
             if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
-                throw new Exception($"{err}");
+                throw new Exception(err.ToString());
             }
             @event.WaitForComplete();
         }
@@ -185,13 +185,14 @@ namespace Se7en.OpenCl
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Execute(IntPtr[] workGroupSizePtr, SvmPointer[] args, uint workingDim = 1)
         {
-            SetSvmArgs(args);
             LockSvmForGPU(args);
+            
+            SetSvmArgs(args);
 
             ErrorCode err;
             if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
-                throw new Exception($"{err}");
+                throw new Exception(err.ToString());
             }
             @event.WaitForComplete();
 
@@ -212,7 +213,7 @@ namespace Se7en.OpenCl
             ErrorCode err;
             if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
-                throw new Exception($"{err}");
+                throw new Exception(err.ToString());
             }
             @event.WaitForComplete();
 

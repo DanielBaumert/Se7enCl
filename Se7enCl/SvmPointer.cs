@@ -49,7 +49,7 @@ namespace Se7en.OpenCl
                     throw new Exception($"{error}");
                 }
                 @event.WaitForComplete();
-                _isLocked = !_isLocked;
+                _isLocked = true;
             }
         }
 
@@ -62,6 +62,7 @@ namespace Se7en.OpenCl
                     throw new Exception($"{error}");
                 }
                 @event.WaitForComplete();
+                _isLocked = false;
             }
         }
 
