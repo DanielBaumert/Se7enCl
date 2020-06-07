@@ -10,27 +10,22 @@ namespace Se7en.OpenCl.Test
     [TestClass]
     public class UnitTest1
     {
-        private const string SOURCE_CODE = @"
-                // Simple test; c[i] = a[i] + b[i]
+        //private const string SOURCE_CODE = @"
+        //        // Simple test; c[i] = a[i] + b[i]
 
-                __kernel void add_array(__global float *a, __global float *b, __global float *c)
-                {
-                    int xid = get_global_id(0);
-                    c[xid] = a[xid] + b[xid];
-                }
                 
-                __kernel void sub_array(__global float *a, __global float *b, __global float *c)
-                {
-                    int xid = get_global_id(0);
-                    c[xid] = a[xid] - b[xid];
-                }
-                ";
+        //        __kernel void sub_array(__global float *a, __global float *b, __global float *c)
+        //        {
+        //            int xid = get_global_id(0);
+        //            c[xid] = a[xid] - b[xid];
+        //        }
+        //        ";
 
         uint _platformCount;
         Platform[] _platforms;
         Device _device;
         Context _context;
-
+        CommandQueue _commandQueue;
         [TestInitialize]
         public void Init()
         {
@@ -39,6 +34,7 @@ namespace Se7en.OpenCl.Test
             Cl.GetPlatformIDs(_platformCount, _platforms, out _);
             _device = Device.GetDevice(_platforms, "GTX");
             _context = _device.CreateContext();
+            _commandQueue = Cl.CreateCommandQueue(_context, _device, CommandQueueProperties.None, out _);
         }
 
         [TestMethod]
@@ -95,13 +91,14 @@ namespace Se7en.OpenCl.Test
         [TestMethod]
         public void GetContextByClWithPlattform()
         {
+            throw new NotSupportedException("");
             IntPtr context = Cl.CreateContext(
-                new ContextProperty[] { 
-                    new ContextProperty(ContextProperties.Platform, _platforms.First().Handle) 
+                new ContextProperty[] {
+                    new ContextProperty(ContextProperties.Platform, _platforms.First().Handle)
                 },
                 1,
                 new Device[] {
-                    _device 
+                    _device
                 },
                 null,
                 IntPtr.Zero,
@@ -120,6 +117,38 @@ namespace Se7en.OpenCl.Test
         }
 
         [TestMethod]
+        public void AllocedLockCheck()
+        {
+            IntPtr length = new IntPtr(10);
+            IntPtr svmMemory = Cl.SVMAlloc(_context, SVMMemFlags.ReadWrite, length, sizeof(int) * 4);
+
+            ErrorCode error = Cl.EnqueueSVMMap(_commandQueue, 1, MapFlags.Read | MapFlags.Write, svmMemory, length, 0, null, out Event @event);
+            Assert.IsTrue(error == ErrorCode.Success, $"{error}");
+            @event.WaitForComplete();
+
+            _ = Cl.EnqueueSVMUnmap(_commandQueue, svmMemory, 0, null, out Event @event1);
+            @event1.WaitForComplete();
+
+            Cl.SVMFree(_context, svmMemory);
+        }
+
+        [TestMethod]
+        public void AllocedUnlockCheck()
+        {
+            IntPtr length = new IntPtr(10);
+            IntPtr svmMemory = Cl.SVMAlloc(_context, SVMMemFlags.ReadWrite, length, sizeof(int) * 4);
+
+            _ = Cl.EnqueueSVMMap(_commandQueue, 1, MapFlags.Read | MapFlags.Write, svmMemory, length, 0, null, out Event @event);
+            @event.WaitForComplete();
+
+            ErrorCode  error = Cl.EnqueueSVMUnmap(_commandQueue, svmMemory, 0, null, out Event @event1);
+            Assert.IsTrue(error == ErrorCode.Success, $"{error}");
+            @event1.WaitForComplete();
+
+
+            Cl.SVMFree(_context, svmMemory);
+        }
+        [TestMethod]
         public void AllocSVMMemoryFineGrainBuffer()
         {
             IntPtr svmMemory = Cl.SVMAlloc(_context, SVMMemFlags.ReadWrite | SVMMemFlags.FineGrainBuffer, new IntPtr(10), sizeof(int) * 4);
@@ -132,7 +161,7 @@ namespace Se7en.OpenCl.Test
         {
             IntPtr svmMemory = Cl.SVMAlloc(_context, SVMMemFlags.ReadWrite | SVMMemFlags.FineGrainBuffer | SVMMemFlags.Atomic, new IntPtr(10), sizeof(int) * 4);
             Assert.IsTrue(
-                svmMemory != IntPtr.Zero, 
+                svmMemory != IntPtr.Zero,
                 $"0x{(svmMemory.ToInt64().ToString("X16"))}, FineGrainBufferSupported with Atomic: {_device.IsFineGrainBufferSupported && _device.IsAtomicSupported}"
             );
             Cl.SVMFree(_context, svmMemory);
@@ -142,25 +171,30 @@ namespace Se7en.OpenCl.Test
         public void TestMethod1()
         {
 
+            const string SOURCE_CODE = @"
+                __kernel void add_array(__global float *a, __global float *b, __global float *c)
+                {
+                    int xid = get_global_id(0);
+                    c[xid] = a[xid] + b[xid];
+                }";
+
             const int length = 10;
 
             using (OpenClCompiler builder = new OpenClCompiler(SOURCE_CODE, DeviceType.Gpu)) // <- device selector ("*GTX*")
-            using (OpenClBridge bridge = builder.GetMethode("add_array"))                           // methode capture
-            using (SvmPointer<float> a = builder.AllocSvmMemory<float>((IntPtr)length))             // buffer init
-            using (SvmPointer<float> b = builder.AllocSvmMemory<float>((IntPtr)length))             // buffer init
-            using (SvmPointer<float> c = builder.AllocSvmMemory<float>((IntPtr)length))             // buffer init
+            using (OpenClBridge bridge = builder.GetMethode("add_array"))                   // methode capture
+            using (SvmPointer<float> a = builder.AllocSvmMemory<float>(length))             // buffer init
+            using (SvmPointer<float> b = builder.AllocSvmMemory<float>(length))             // buffer init
+            using (SvmPointer<float> c = builder.AllocSvmMemory<float>(length))             // buffer init
             {
-                
                 //init values
                 for (int i = 0; i < length; i++)
                 {
                     a[i] = b[i] = i;
                 }
-                
-                bridge.SetSvmArgs(a, b, c);                       // Parameter set
-                bridge.Execute(new IntPtr[] { (IntPtr)length });        // exec
 
-                //init values
+                bridge.Execute(new IntPtr[] { (IntPtr)length }, new SvmPointer[] { a, b, c } );        // exec
+                
+                //check values
                 for (int i = 0; i < length; i++)
                 {
                     Assert.AreEqual(a[i] + b[i], c[i]);
