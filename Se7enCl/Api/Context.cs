@@ -22,25 +22,39 @@ namespace Se7en.OpenCl
             => Handle = handle;
 
         public readonly uint GetReferenceCount()
-           => Utils.GetTInfo<ContextInfo, uint>(Handle, ContextInfo.ReferenceCount, Cl.GetContextInfo);
+        {
+            return Utils.GetTInfo<ContextInfo, uint>(Handle, ContextInfo.ReferenceCount, Cl.GetContextInfo);
+        }
+
         public readonly string GetProperties()
-            => Utils.GetTInfo<ContextInfo, byte>(Handle, ContextInfo.Properties, Cl.GetContextInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<ContextInfo, byte>(Handle, ContextInfo.Properties, Cl.GetContextInfo, out _).ToStrg();
+        }
+
         public readonly Device[] GetDevices()
-            => Utils.GetTInfo<ContextInfo, Device>(Handle, ContextInfo.Devices, Cl.GetContextInfo, out _);
+        {
+            return Utils.GetTInfo<ContextInfo, Device>(Handle, ContextInfo.Devices, Cl.GetContextInfo, out _);
+        }
 
         #region IRefCountedHandle Members
 
         public ErrorCode Retain()
-            => Cl.RetainContext(Handle);
+        {
+            return Cl.RetainContext(Handle);
+        }
 
         public ErrorCode Release()
-            => Cl.ReleaseContext(Handle);
+        {
+            return Cl.ReleaseContext(Handle);
+        }
 
         #endregion
 
         #region IDisposable Members
         public void Dispose()
-            => Release();
+        {
+            Release();
+        }
 
         #endregion
 

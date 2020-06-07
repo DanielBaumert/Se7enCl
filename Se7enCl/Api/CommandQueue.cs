@@ -27,17 +27,23 @@ namespace Se7en.OpenCl
         #region IRefCountedHandle Members
 
         public ErrorCode Retain()
-           => Cl.RetainCommandQueue(Handle);
+        {
+            return Cl.RetainCommandQueue(Handle);
+        }
 
         public ErrorCode Release()
-            => Cl.ReleaseCommandQueue(Handle);
+        {
+            return Cl.ReleaseCommandQueue(Handle);
+        }
 
         #endregion
 
         #region IDisposable Members
 
         public void Dispose()
-            => Release();
+        {
+            Release();
+        }
 
         #endregion
 

@@ -7,18 +7,22 @@ using System.Runtime.InteropServices;
 namespace Se7en.OpenCl
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe readonly struct SvmPointer : IDisposable
+    public unsafe struct SvmPointer : IDisposable
     {
+        public bool IsLocked;
         internal readonly IntPtr _handle;
         private readonly Context _ctx;
-        public byte this[int offset] {
+
+        public byte this[int offset]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *((byte*)_handle + offset);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *((byte*)_handle + offset) = value;
         }
 
-        public byte this[int x, int y, int width] {
+        public byte this[int x, int y, int width]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *((byte*)_handle + (y * width) + x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,18 +33,38 @@ namespace Se7en.OpenCl
         {
             _ctx = ctx;
             _handle = ptr;
+            IsLocked = false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ErrorCode Lock(CommandQueue queue, IntPtr length)
-            => Cl.EnqueueSVMMap(queue, 1, MapFlags.Read | MapFlags.Write, this, length, 0, null, out _);
+        {
+            if (!IsLocked)
+            {
+                ErrorCode error = Cl.EnqueueSVMMap(queue, 1, MapFlags.Read | MapFlags.Write, this, length, 0, null, out Event @event);
+                @event.WaitForComplete();
+                return error;
+            }
+            return ErrorCode.Success;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ErrorCode Unlock(CommandQueue queue)
-            => Cl.EnqueueSVMUnmap(queue, this, 0, null, out _);
+        {
+            if (IsLocked)
+            {
+                ErrorCode error = Cl.EnqueueSVMUnmap(queue, this, 0, null, out Event @event);
+                @event.WaitForComplete();
+                return error;
+            }
+            return ErrorCode.Success;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => Cl.SVMFree(_ctx, _handle);
+        public void Dispose()
+        {
+            Cl.SVMFree(_ctx, _handle);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator IntPtr(SvmPointer pointer) => pointer._handle;
@@ -57,13 +81,15 @@ namespace Se7en.OpenCl
         internal readonly SvmPointer _pointer;
         public readonly T* Pointer => (T*)_pointer;
 
-        public T this[int offset] {
+        public T this[int offset]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *(Pointer + offset);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *(Pointer + offset) = value;
         }
-        public T this[int x, int y, int width] {
+        public T this[int x, int y, int width]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *(Pointer + (y * width) + x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,8 +98,12 @@ namespace Se7en.OpenCl
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SvmPointer(SvmPointer svmPointer) => _pointer = svmPointer;
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => _pointer.Dispose();
+        public void Dispose()
+        {
+            _pointer.Dispose();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator SvmPointer<T>(SvmPointer pointer) => new SvmPointer<T>(pointer);

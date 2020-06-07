@@ -24,24 +24,57 @@ namespace Se7en.OpenCl
 
         public readonly Context Context;
         public readonly Kernel Kernel;
+        public readonly Device Device;
         public readonly int Arguments;
+        
+
+
         internal OpenClBridge(Context ctx, Device device, Kernel kernel)
         {
             Context = ctx;
             Kernel = kernel;
+            Device = device;
 
             _commandQueue = new CommandQueue(Cl.CreateCommandQueue(ctx, device, CommandQueueProperties.None, out _));
             Arguments = Kernel.NumArgs;
             _gpuBuffers = new GPUBuffer[Arguments];
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetArgumentValue<T>(int argumentIndex, T[] source, MemFlags flags)
+            where T : unmanaged
+        {
+            fixed (T* sourcePtr = source)
+            {
+                SetArgumentValue(argumentIndex, sourcePtr, flags, sizeof(T) * source.Length);
+                
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetArgumentValue<T>(int argumentIndex, T[] source, MemFlags flags, long count)
+            where T : unmanaged
+        {
+            fixed (T* sourcePtr = source)
+            {
+                SetArgumentValue(argumentIndex, sourcePtr, flags, sizeof(T) * count);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetArgumentValue<T>(int argumentIndex, T[] source, MemFlags flags, int offset, long count)
+            where T : unmanaged
+        {
+            fixed (T* sourcePtr = source)
+            {
+                SetArgumentValue(argumentIndex, sourcePtr + offset, flags, sizeof(T) * count);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetArgumentValue<T>(int argumentIndex, T* item, MemFlags flags, long count)
             where T : unmanaged
         {
             SetArgumentValue(argumentIndex, item, flags, sizeof(T) * count);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetArgumentValue(int argumentIndex, void* item, MemFlags flags, long byteCount)
         {
             fixed (GPUBuffer* gpuBufferPtr = _gpuBuffers)
@@ -67,6 +100,9 @@ namespace Se7en.OpenCl
                 }
             }
         }
+
+
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetSvmArgs(params SvmPointer[] args)

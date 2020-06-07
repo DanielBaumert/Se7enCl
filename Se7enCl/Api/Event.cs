@@ -19,22 +19,31 @@ namespace Se7en.OpenCl
         public Context Context => Utils.GetTInfo<EventInfo, Context>(Handle, EventInfo.Context, Cl.GetEventInfo);
         public uint ReferenceCount => Utils.GetTInfo<EventInfo, uint>(Handle, EventInfo.ReferenceCount, Cl.GetEventInfo);
 
-        public void WaitForComplete() => Cl.WaitForEvents(1, new Event []{ this });
+        public void WaitForComplete()
+        {
+            Cl.WaitForEvents(1, new Event[] { this });
+        }
 
         #region IRefCountedHandle Members
 
         public ErrorCode Retain()
-            => Cl.RetainEvent(Handle);
+        {
+            return Cl.RetainEvent(Handle);
+        }
 
         public ErrorCode Release()
-            => Cl.ReleaseEvent(Handle);
+        {
+            return Cl.ReleaseEvent(Handle);
+        }
 
         #endregion
 
         #region IDisposable Members
 
         public void Dispose()
-            => Release();
+        {
+            Release();
+        }
 
         #endregion
     }

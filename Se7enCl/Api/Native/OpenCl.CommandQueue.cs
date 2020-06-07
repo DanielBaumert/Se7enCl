@@ -7,7 +7,7 @@ namespace Se7en.OpenCl.Api.Native
     public unsafe static partial class Cl
     {
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateCommandQueue")]
-        public static extern IntPtr CreateCommandQueue(IntPtr context, IntPtr device,
+        public static extern CommandQueue CreateCommandQueue(IntPtr context, IntPtr device,
                                                         [MarshalAs(UnmanagedType.U8)] CommandQueueProperties properties,
                                                         [Out] [MarshalAs(UnmanagedType.I4)] out ErrorCode error);
 

@@ -13,11 +13,7 @@ namespace Se7en.OpenCl
         private readonly Program _program;
         private readonly Device _device;
         private readonly Kernel[] _kernels;
-
-        public readonly bool IsCoarseGrainBufferSupported;
-        public readonly bool IsFineGrainBufferSupported;
-        public readonly bool IsFineGrainSystemSupported;
-        public readonly bool IsAtomicSupported;
+        private readonly CommandQueue _queue;
 
         public readonly string Source;
         public readonly uint KernelCount;
@@ -44,12 +40,6 @@ namespace Se7en.OpenCl
             _device = device;
             _ctx = device.CreateContext();
 
-            SVMCapabilities capabilities = _device.SvmCapabilities;
-
-            IsCoarseGrainBufferSupported = (capabilities & SVMCapabilities.SvmCoarseGrainBuffer) == SVMCapabilities.SvmCoarseGrainBuffer;
-            IsFineGrainBufferSupported = (capabilities & SVMCapabilities.SvmFineGrainBuffer) == SVMCapabilities.SvmFineGrainBuffer;
-            IsFineGrainSystemSupported = (capabilities & SVMCapabilities.SvmFineGrainSystem) == SVMCapabilities.SvmFineGrainSystem;
-            IsAtomicSupported = (capabilities & SVMCapabilities.SvmAtomics) == SVMCapabilities.SvmAtomics;
 
             Source = source;
             _program = new Program(Cl.CreateProgramWithSource(_ctx, 1, new string[] { source }, null, out ErrorCode error));
@@ -60,7 +50,11 @@ namespace Se7en.OpenCl
 
             _kernels = new Kernel[KernelCount];
 
-            Cl.CreateKernelsInProgram(_program, KernelCount, _kernels, out _);
+            if((error = Cl.CreateKernelsInProgram(_program, KernelCount, _kernels, out _)) != ErrorCode.Success) {
+                throw new Exception($"{error}");
+            }
+
+            _queue = Cl.CreateCommandQueue(_ctx, _device, CommandQueueProperties.None, out _);
         }
         /// <summary>
         /// Alloc shared virtual memory
@@ -70,14 +64,16 @@ namespace Se7en.OpenCl
         public SvmPointer AllocSvmMemory(IntPtr size)
         {
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
-            if (IsFineGrainBufferSupported)
+            
+            if (_device.IsFineGrainBufferSupported)
             {
-                flags = SVMMemFlags.FineGrainBuffer;
-                if (IsAtomicSupported)
+                flags |= SVMMemFlags.FineGrainBuffer;
+                if (_device.IsAtomicSupported)
                 {
                     flags |= SVMMemFlags.Atomic;
                 }
             }
+
             return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
         }
         /// <summary>
@@ -87,18 +83,31 @@ namespace Se7en.OpenCl
         /// <param name="flags">Shared virtual memory attributes</param>
         /// <returns>A pointer to the shared virtual memory</returns>
         public SvmPointer AllocSvmMemory(IntPtr size, SVMMemFlags flags)
-            => new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
+        {
+            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
+        }
+
         public SvmPointer<T> AllocSvmMemory<T>(IntPtr size)
            where T : unmanaged
         {
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
-            if (IsFineGrainBufferSupported)
+
+            if (_device.IsFineGrainBufferSupported)
             {
                 flags |= SVMMemFlags.FineGrainBuffer;
-                if (IsAtomicSupported)
+                if (_device.IsAtomicSupported)
                 {
                     flags |= SVMMemFlags.Atomic;
                 }
+
+                return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+
+            } else if(_device.IsFineGrainSystemSupported)
+            {
+                flags |= SVMMemFlags.FineGrainBuffer;
+                SvmPointer svmPointer = (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+                
+
             }
             return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
         }

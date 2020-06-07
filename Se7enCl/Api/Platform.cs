@@ -15,19 +15,39 @@ namespace Se7en.OpenCl
     {
         public readonly IntPtr Handle;
         internal Platform(IntPtr handle)
-            => Handle = handle;
+        {
+            Handle = handle;
+        }
+
         public string GetProfile()
-           => Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Profile, Cl.GetPlatformInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Profile, Cl.GetPlatformInfo, out _).ToStrg();
+        }
+
         public string GetVersion()
-           => Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Version, Cl.GetPlatformInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Version, Cl.GetPlatformInfo, out _).ToStrg();
+        }
+
         public string GetName()
-           => Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Name, Cl.GetPlatformInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Name, Cl.GetPlatformInfo, out _).ToStrg();
+        }
+
         public string GetVendor()
-           => Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Vendor, Cl.GetPlatformInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Vendor, Cl.GetPlatformInfo, out _).ToStrg();
+        }
+
         public string GetExtensions()
-           => Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Extensions, Cl.GetPlatformInfo, out _).ToStrg();
+        {
+            return Utils.GetTInfo<PlatformInfo, byte>(Handle, PlatformInfo.Extensions, Cl.GetPlatformInfo, out _).ToStrg();
+        }
+
         public ulong GetHosttimerresolution()
-           => Utils.GetTInfo<PlatformInfo, ulong>(Handle, PlatformInfo.Vendor, Cl.GetPlatformInfo);
+        {
+            return Utils.GetTInfo<PlatformInfo, ulong>(Handle, PlatformInfo.Vendor, Cl.GetPlatformInfo);
+        }
 
         public Device[] GetDevices(DeviceType type = DeviceType.All)
         {

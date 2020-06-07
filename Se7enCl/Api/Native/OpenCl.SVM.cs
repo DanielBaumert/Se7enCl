@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 namespace Se7en.OpenCl.Api.Native
 {
-
     public unsafe static partial class Cl
     {
         /// <summary>
