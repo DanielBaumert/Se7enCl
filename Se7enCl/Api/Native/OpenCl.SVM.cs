@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 namespace Se7en.OpenCl.Api.Native
 {
-
     public unsafe static partial class Cl
     {
         /// <summary>
@@ -81,7 +80,7 @@ namespace Se7en.OpenCl.Api.Native
                                                      IntPtr svmPtr,
                                                      IntPtr size,
                                                      uint numEventsInWaitList,
-                                                     [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 6)] Event[] eventWaitList,
+                                                     [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 5)] Event[] eventWaitList,
                                                      [Out] [MarshalAs(UnmanagedType.Struct)] out Event e);
 
         /// <summary>
@@ -100,11 +99,11 @@ namespace Se7en.OpenCl.Api.Native
         /// If event_wait_list is NULL, then clEnqueueSVMUnmap does not wait on any event to complete.
         /// </param>
         /// <returns></returns>
-        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clEnqueueSVMUnmap ")]
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clEnqueueSVMUnmap")]
         public static extern ErrorCode EnqueueSVMUnmap(IntPtr commandQueue,
                                                   IntPtr svmPtr,
                                                   uint numEventsInWaitList,
-                                                  [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 6)] Event[] eventWaitList,
+                                                  [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 2)] Event[] eventWaitList,
                                                   [Out] [MarshalAs(UnmanagedType.Struct)] out Event e);
 
         

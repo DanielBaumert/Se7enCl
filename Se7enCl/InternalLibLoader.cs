@@ -6,11 +6,10 @@ namespace Se7en
 {
     static class InternalLibLoader
     {
-#if Windows
-        public const string OpenCL = "OpenCL.dll";
-#elif Linux
-        public const string OpenCL = "libOpenCL.so";
-#endif
+        public const string OpenCL = "OpenCL";
+
+        private const string OpenClWin32NT = "OpenCL.dll";
+        private const string OpenClLinux = "libOpenCL.so";
 
         static InternalLibLoader()
         {
@@ -18,7 +17,12 @@ namespace Se7en
             {
                 return e.Name switch
                 {
-                    OpenCL => LoadLib(sender, OpenCL),
+                    OpenCL => LoadLib(
+                                      sender,
+                                      Environment.OSVersion.Platform == PlatformID.Win32NT
+                                            ? OpenClWin32NT
+                                            : OpenClLinux
+                                     ),
                     _ => null,
                 };
             };

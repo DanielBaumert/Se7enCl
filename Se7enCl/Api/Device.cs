@@ -41,12 +41,22 @@ namespace Se7en.OpenCl
             }
             throw new Exception("target device type not found");
         }
+
+        public readonly bool IsCoarseGrainBufferSupported => (SvmCapabilities & SVMCapabilities.SvmCoarseGrainBuffer) == SVMCapabilities.SvmCoarseGrainBuffer;
+        public readonly bool IsFineGrainBufferSupported => (SvmCapabilities & SVMCapabilities.SvmFineGrainBuffer) == SVMCapabilities.SvmFineGrainBuffer;
+        public readonly bool IsFineGrainSystemSupported => (SvmCapabilities & SVMCapabilities.SvmFineGrainSystem) == SVMCapabilities.SvmFineGrainSystem;
+        public readonly bool IsAtomicSupported => (SvmCapabilities & SVMCapabilities.SvmAtomics) == SVMCapabilities.SvmAtomics;
+
+
         /// <summary>
         //Ctor
         internal Device(IntPtr handle)
         {
             Handle = handle;
+            SVMCapabilities capabilities = Utils.GetTInfo<DeviceInfo, SVMCapabilities>(Handle, DeviceInfo.SvmCapabilities, Cl.GetDeviceInfo);
         }
+
+
 
         /// <summary>
         /// A unique device vendor identifier.<br/>
@@ -244,7 +254,7 @@ namespace Se7en.OpenCl
         /// </summary>
         public readonly uint MaxReadWriteImageArgs => Utils.GetTInfo<DeviceInfo, uint>(Handle, DeviceInfo.MaxReadWriteImageArgs, Cl.GetDeviceInfo);
 
-        
+
         /// <summary>
         /// The intermediate languages that can be supported by clCreateProgramWithIL for this device.<br/>
         /// Returns a space-separated list of IL version strings of the form <IL_Prefix>_<Major_Version>.<br/>
@@ -693,8 +703,14 @@ namespace Se7en.OpenCl
 
 
         public unsafe Context CreateContext()
-            => new Context(Cl.CreateContext(null, 1, new[] { this }, null, IntPtr.Zero, out ErrorCode _));
-        public void Dispose() => Cl.ReleaseDevice(Handle);
+        {
+            return new Context(Cl.CreateContext(null, 1, new[] { this }, null, IntPtr.Zero, out ErrorCode _));
+        }
+
+        public void Dispose()
+        {
+            Cl.ReleaseDevice(Handle);
+        }
 
         public static implicit operator IntPtr(Device device) => device.Handle;
     }

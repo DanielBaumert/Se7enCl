@@ -7,40 +7,75 @@ using System.Runtime.InteropServices;
 namespace Se7en.OpenCl
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe readonly struct SvmPointer : IDisposable
+    public unsafe struct SvmPointer : IDisposable
     {
         internal readonly IntPtr _handle;
         private readonly Context _ctx;
-        public byte this[int offset] {
+        private bool _isLocked;
+
+        public readonly long Length;
+
+        public byte this[int offset]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *((byte*)_handle + offset);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *((byte*)_handle + offset) = value;
         }
 
-        public byte this[int x, int y, int width] {
+        public byte this[int x, int y, int width]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *((byte*)_handle + (y * width) + x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *((byte*)_handle + (y * width) + x) = value;
         }
 
-        internal SvmPointer(Context ctx, IntPtr ptr)
+        internal SvmPointer(Context ctx, IntPtr ptr, long length)
         {
             _ctx = ctx;
             _handle = ptr;
+            Length = length;
+
+            _isLocked = false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ErrorCode Lock(CommandQueue queue, IntPtr length)
-            => Cl.EnqueueSVMMap(queue, 1, MapFlags.Read | MapFlags.Write, this, length, 0, null, out _);
+        internal void Lock(OpenClBridge bridge)
+        {
+            if (!_isLocked)
+            {
+                ErrorCode error;
+                if((error =  Cl.EnqueueSVMMap(bridge.CommandQueue, 1, MapFlags.Read | MapFlags.Write, _handle, new IntPtr(Length), 0, null, out Event @event)) != ErrorCode.Success) {
+                    throw new Exception($"{error}");
+                }
+                @event.WaitForComplete();
+                _isLocked = !_isLocked;
+            }
+        }
+
+        internal void Unlock(OpenClBridge bridge)
+        {
+            if (_isLocked)
+            {
+                ErrorCode error;
+                if ((error = Cl.EnqueueSVMUnmap(bridge.CommandQueue, this, 0, null, out Event @event)) != ErrorCode.Success) {
+                    throw new Exception($"{error}");
+                }
+                @event.WaitForComplete();
+            }
+        }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ErrorCode Unlock(CommandQueue queue)
-            => Cl.EnqueueSVMUnmap(queue, this, 0, null, out _);
+        public void Dispose()
+        {
+            if (_isLocked)
+            {
+                throw new Exception("Please unlock at first");
+            }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => Cl.SVMFree(_ctx, _handle);
+            Cl.SVMFree(_ctx, _handle);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator IntPtr(SvmPointer pointer) => pointer._handle;
@@ -57,23 +92,43 @@ namespace Se7en.OpenCl
         internal readonly SvmPointer _pointer;
         public readonly T* Pointer => (T*)_pointer;
 
-        public T this[int offset] {
+        public T this[int offset]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *(Pointer + offset);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *(Pointer + offset) = value;
         }
-        public T this[int x, int y, int width] {
+        public T this[int x, int y, int width]
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => *(Pointer + (y * width) + x);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *(Pointer + (y * width) + x) = value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SvmPointer(SvmPointer svmPointer) => _pointer = svmPointer;
+        internal SvmPointer(SvmPointer svmPointer)
+        {
+            _pointer = svmPointer;
+        }
+
+
+        public void Lock(OpenClBridge bridge)
+        {
+            _pointer.Lock(bridge);
+        }
+
+        public void Unlock(OpenClBridge bridge)
+        {
+            _pointer.Lock(bridge);
+        }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => _pointer.Dispose();
+        public void Dispose()
+        {
+            _pointer.Dispose();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator SvmPointer<T>(SvmPointer pointer) => new SvmPointer<T>(pointer);

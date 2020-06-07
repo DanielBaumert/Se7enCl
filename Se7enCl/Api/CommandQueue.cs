@@ -8,11 +8,11 @@ namespace Se7en.OpenCl
     [StructLayout(LayoutKind.Sequential)]
     public readonly unsafe struct CommandQueue : IRefCountedHandle
     {
-        public readonly IntPtr Handle;
+        internal static CommandQueue Empty => new CommandQueue(IntPtr.Zero);
 
+        public readonly IntPtr Handle;
         internal CommandQueue(IntPtr handle)
             => Handle = handle;
-
         public Context Context 
             => Utils.GetTInfo<CommandQueueInfo, Context>(Handle, CommandQueueInfo.Context, Cl.GetCommandQueueInfo);
         public Device Device
@@ -27,17 +27,23 @@ namespace Se7en.OpenCl
         #region IRefCountedHandle Members
 
         public ErrorCode Retain()
-           => Cl.RetainCommandQueue(Handle);
+        {
+            return Cl.RetainCommandQueue(Handle);
+        }
 
         public ErrorCode Release()
-            => Cl.ReleaseCommandQueue(Handle);
+        {
+            return Cl.ReleaseCommandQueue(Handle);
+        }
 
         #endregion
 
         #region IDisposable Members
 
         public void Dispose()
-            => Release();
+        {
+            Release();
+        }
 
         #endregion
 
