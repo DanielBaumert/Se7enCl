@@ -19,13 +19,13 @@ namespace Se7en.OpenCl
     /// </summary>
     public readonly unsafe struct OpenClBridge : IDisposable
     {
-        private readonly CommandQueue _commandQueue;
         private readonly GPUBuffer[] _gpuBuffers;
 
         public readonly Context Context;
         public readonly Kernel Kernel;
         public readonly Device Device;
         public readonly int Arguments;
+        public readonly CommandQueue CommandQueue;
         
 
 
@@ -35,7 +35,7 @@ namespace Se7en.OpenCl
             Kernel = kernel;
             Device = device;
 
-            _commandQueue = new CommandQueue(Cl.CreateCommandQueue(ctx, device, CommandQueueProperties.None, out _));
+            CommandQueue = new CommandQueue(Cl.CreateCommandQueue(ctx, device, CommandQueueProperties.None, out _));
             Arguments = Kernel.NumArgs;
             _gpuBuffers = new GPUBuffer[Arguments];
         }
@@ -95,13 +95,11 @@ namespace Se7en.OpenCl
                 err = Cl.SetKernelArg(Kernel, (uint)argumentIndex, IntPtr.Size, buffer.MemoryObject);
                 if ((IntPtr)item != IntPtr.Zero)
                 {
-                    Cl.EnqueueWriteBuffer(_commandQueue, buffer.MemoryObject, 1, IntPtr.Zero, byteCount, (IntPtr)item, 0, null, out Event @event);
+                    Cl.EnqueueWriteBuffer(CommandQueue, buffer.MemoryObject, 1, IntPtr.Zero, byteCount, (IntPtr)item, 0, null, out Event @event);
                     @event.WaitForComplete();
                 }
             }
         }
-
-
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -120,20 +118,19 @@ namespace Se7en.OpenCl
                 }
             }
         }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetSvmArgs(uint[] argIndex, params SvmPointer[] args)
+        public void SetSvmArgs(uint[] argsIndex, params SvmPointer[] args)
         {
             ErrorCode err;
             int count = args.Length;
-            if (argIndex == null)
+            if (argsIndex == null)
             {
-                if (count != argIndex.Length)
+                if (count != argsIndex.Length)
                 {
-                    throw new IndexOutOfRangeException($"{nameof(argIndex)}.length != {nameof(args)}.length");
+                    throw new IndexOutOfRangeException($"{nameof(argsIndex)}.length != {nameof(args)}.length");
                 }
 
-                fixed (uint* argIndexPtr = argIndex)
+                fixed (uint* argIndexPtr = argsIndex)
                 fixed (SvmPointer* argsPtr = args)
                 {
                     for (int i = 0; i < count; i++)
@@ -151,7 +148,20 @@ namespace Se7en.OpenCl
             }
         }
 
-
+        public void LockSvmForGPU(params SvmPointer[] pointers)
+        {
+            foreach (var svm in pointers)
+            {
+                svm.Lock(this);
+            }
+        }
+        public void UnlockSvmGPU(params SvmPointer[] pointers)
+        {
+            foreach (var svm in pointers)
+            {
+                svm.Unlock(this);
+            }
+        }
         /// <summary>
         /// Runing the GPU program
         /// </summary>
@@ -161,7 +171,7 @@ namespace Se7en.OpenCl
         public void Execute(IntPtr[] workGroupSizePtr, uint workingDim = 1)
         {
             ErrorCode err;
-            if ((err = Cl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
+            if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
                 throw new Exception($"{err}");
             }
@@ -176,16 +186,42 @@ namespace Se7en.OpenCl
         public void Execute(IntPtr[] workGroupSizePtr, SvmPointer[] args, uint workingDim = 1)
         {
             SetSvmArgs(args);
+            LockSvmForGPU(args);
+
             ErrorCode err;
-            if ((err = Cl.EnqueueNDRangeKernel(_commandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
+            if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
                 throw new Exception($"{err}");
             }
             @event.WaitForComplete();
+
+            UnlockSvmGPU(args);
         }
+
+        /// <summary>
+        /// Runing the GPU program
+        /// </summary>
+        /// <param name="workGroupSizePtr">image dimention in 3D</param>
+        /// <param name="workingDim">global_id(n) (n := { (1D := 1), (2D := 2), (3D := 3) }</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Execute(IntPtr[] workGroupSizePtr, uint[] argsIndex, SvmPointer[] args, uint workingDim = 1)
+        {
+            SetSvmArgs(argsIndex, args);
+            LockSvmForGPU(args);
+
+            ErrorCode err;
+            if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
+            {
+                throw new Exception($"{err}");
+            }
+            @event.WaitForComplete();
+
+            UnlockSvmGPU(args);
+        }
+
         public void Dispose()
         {
-            _commandQueue.Dispose();
+            CommandQueue.Dispose();
             fixed (GPUBuffer* gpuBufferPtr = _gpuBuffers)
             {
                 for (int iMemObj = 0; iMemObj < Arguments; iMemObj++)

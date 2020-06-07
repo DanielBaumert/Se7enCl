@@ -56,15 +56,10 @@ namespace Se7en.OpenCl
 
             _queue = Cl.CreateCommandQueue(_ctx, _device, CommandQueueProperties.None, out _);
         }
-        /// <summary>
-        /// Alloc shared virtual memory
-        /// </summary>
-        /// <param name="size">Size to alloc in bytes</param>
-        /// <returns>A pointer to the shared virtual memory</returns>
-        public SvmPointer AllocSvmMemory(IntPtr size)
+        public SvmPointer AllocSvmMemory(long length)
         {
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
-            
+
             if (_device.IsFineGrainBufferSupported)
             {
                 flags |= SVMMemFlags.FineGrainBuffer;
@@ -72,26 +67,18 @@ namespace Se7en.OpenCl
                 {
                     flags |= SVMMemFlags.Atomic;
                 }
+
+                return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
             }
 
-            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
+            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
         }
-        /// <summary>
-        /// Alloc shared virtual memory
-        /// </summary>
-        /// <param name="size">Size to alloc in bytes</param>
-        /// <param name="flags">Shared virtual memory attributes</param>
-        /// <returns>A pointer to the shared virtual memory</returns>
-        public SvmPointer AllocSvmMemory(IntPtr size, SVMMemFlags flags)
-        {
-            return new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, size));
-        }
-
-        public SvmPointer<T> AllocSvmMemory<T>(IntPtr size)
+        public SvmPointer<T> AllocSvmMemory<T>(long count)
            where T : unmanaged
         {
             SVMMemFlags flags = SVMMemFlags.ReadWrite;
 
+            long length = count * sizeof(T);
             if (_device.IsFineGrainBufferSupported)
             {
                 flags |= SVMMemFlags.FineGrainBuffer;
@@ -100,30 +87,12 @@ namespace Se7en.OpenCl
                     flags |= SVMMemFlags.Atomic;
                 }
 
-                return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+                return (SvmPointer<T>) new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
 
-            } else if(_device.IsFineGrainSystemSupported)
-            {
-                flags |= SVMMemFlags.FineGrainBuffer;
-                SvmPointer svmPointer = (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
-                
-
-            }
-            return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
+            } 
+            return (SvmPointer<T>) new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr(length)), length);
         }
-        /// <summary>
-        /// Alloc shared virtual memory
-        /// </summary>
-        /// <typeparam name="T">Unmanaged retrun type</typeparam>
-        /// <param name="size">Size to alloc in bytes</param>
-        /// <param name="flags">Shared virtual memory attributes</param>
-        /// <returns>A pointer to the shared virtual memory</returns>
-        public SvmPointer<T> AllocSvmMemory<T>(IntPtr size, SVMMemFlags flags)
-        where T : unmanaged
-        {
-            return (SvmPointer<T>)new SvmPointer(_ctx, Cl.SVMAlloc(_ctx, flags, new IntPtr((long)size * sizeof(T))));
-        }
-
+      
         /// <summary> 
         /// Get a spezific __kernel method from the compiled programm by name
         /// </summary>

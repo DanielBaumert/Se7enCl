@@ -9,9 +9,11 @@ namespace Se7en.OpenCl
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct SvmPointer : IDisposable
     {
-        public bool IsLocked;
         internal readonly IntPtr _handle;
         private readonly Context _ctx;
+        private bool _isLocked;
+
+        public readonly long Length;
 
         public byte this[int offset]
         {
@@ -29,40 +31,49 @@ namespace Se7en.OpenCl
             set => *((byte*)_handle + (y * width) + x) = value;
         }
 
-        internal SvmPointer(Context ctx, IntPtr ptr)
+        internal SvmPointer(Context ctx, IntPtr ptr, long length)
         {
             _ctx = ctx;
             _handle = ptr;
-            IsLocked = false;
+            Length = length;
+
+            _isLocked = false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ErrorCode Lock(CommandQueue queue, IntPtr length)
+        internal void Lock(OpenClBridge bridge)
         {
-            if (!IsLocked)
+            if (!_isLocked)
             {
-                ErrorCode error = Cl.EnqueueSVMMap(queue, 1, MapFlags.Read | MapFlags.Write, this, length, 0, null, out Event @event);
+                ErrorCode error;
+                if((error =  Cl.EnqueueSVMMap(bridge.CommandQueue, 1, MapFlags.Read | MapFlags.Write, _handle, new IntPtr(Length), 0, null, out Event @event)) != ErrorCode.Success) {
+                    throw new Exception($"{error}");
+                }
                 @event.WaitForComplete();
-                return error;
+                _isLocked = !_isLocked;
             }
-            return ErrorCode.Success;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ErrorCode Unlock(CommandQueue queue)
+        internal void Unlock(OpenClBridge bridge)
         {
-            if (IsLocked)
+            if (_isLocked)
             {
-                ErrorCode error = Cl.EnqueueSVMUnmap(queue, this, 0, null, out Event @event);
+                ErrorCode error;
+                if ((error = Cl.EnqueueSVMUnmap(bridge.CommandQueue, this, 0, null, out Event @event)) != ErrorCode.Success) {
+                    throw new Exception($"{error}");
+                }
                 @event.WaitForComplete();
-                return error;
             }
-            return ErrorCode.Success;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
+            if (_isLocked)
+            {
+                throw new Exception("Please unlock at first");
+            }
+
             Cl.SVMFree(_ctx, _handle);
         }
 
@@ -96,7 +107,21 @@ namespace Se7en.OpenCl
             set => *(Pointer + (y * width) + x) = value;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SvmPointer(SvmPointer svmPointer) => _pointer = svmPointer;
+        internal SvmPointer(SvmPointer svmPointer)
+        {
+            _pointer = svmPointer;
+        }
+
+
+        public void Lock(OpenClBridge bridge)
+        {
+            _pointer.Lock(bridge);
+        }
+
+        public void Unlock(OpenClBridge bridge)
+        {
+            _pointer.Lock(bridge);
+        }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

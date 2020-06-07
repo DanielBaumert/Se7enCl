@@ -8,11 +8,11 @@ namespace Se7en.OpenCl
     [StructLayout(LayoutKind.Sequential)]
     public readonly unsafe struct CommandQueue : IRefCountedHandle
     {
-        public readonly IntPtr Handle;
+        internal static CommandQueue Empty => new CommandQueue(IntPtr.Zero);
 
+        public readonly IntPtr Handle;
         internal CommandQueue(IntPtr handle)
             => Handle = handle;
-
         public Context Context 
             => Utils.GetTInfo<CommandQueueInfo, Context>(Handle, CommandQueueInfo.Context, Cl.GetCommandQueueInfo);
         public Device Device
