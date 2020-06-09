@@ -30,7 +30,30 @@ namespace Se7en.OpenCl.Api.Native
                                           SVMMemFlags flags,
                                           IntPtr size,
                                           uint alignment = 0);
-
+        /// <summary>
+        /// Allocates a shared virtual memory (SVM) buffer that can be shared by the host and all devices in an OpenCL context that support shared virtual memory.
+        /// </summary>
+        /// <param name="context">
+        /// A valid OpenCL context used to create the SVM buffer.
+        /// </param>
+        /// <param name="flags">
+        /// A bit-field that is used to specify allocation and usage information.
+        /// </param>
+        /// <param name="size">
+        /// The size in bytes of the SVM buffer to be allocated.
+        /// </param>
+        /// <param name="alignment">
+        /// The minimum alignment in bytes that is required for the newly created buffer’s memory region.<br/>
+        /// It must be a power of two up to the largest data type supported by the OpenCL device.<br/>
+        /// For the full profile, the largest data type is long16.<br/>
+        /// For the embedded profile, it is long16 if the device supports 64-bit integers; otherwise it is int16.<br/>
+        /// If alignment is 0, a default alignment will be used that is equal to the size of largest data type supported by the OpenCL implementation.</param>
+        /// <returns></returns>
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clSVMAlloc")]
+        public static extern IntPtr SVMAlloc(IntPtr context,
+                                          SVMMemFlags flags,
+                                          IntPtr size,
+                                          uint alignment = 0);
         /// <summary>
         /// Frees a shared virtual memory buffer allocated using clSVMAlloc.
         /// </summary>
@@ -43,7 +66,7 @@ namespace Se7en.OpenCl.Api.Native
         /// </param>
         /// <returns></returns>
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clSVMFree")]
-        public static extern void SVMFree(Context context, IntPtr svmPointer);
+        public static extern ErrorCode SVMFree(IntPtr context, IntPtr svmPointer);
 
         /// <summary>
         /// Enqueues a command that will allow the host to update a region of a SVM buffer
@@ -124,14 +147,16 @@ namespace Se7en.OpenCl.Api.Native
         /// </param>
         /// <returns></returns>
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clSetKernelArgSVMPointer")]
-        public static extern ErrorCode SetKernelArgSVMPointer(Kernel kernel,
+        public static extern ErrorCode SetKernelArgSVMPointer(IntPtr kernel,
                                                               uint argIndex,
                                                               IntPtr arg);
+
     }
 }
 
 
 /*
+ * 
  * \[DllImport\(Library\)\]\s*\n\s+((?:[^\s]+\s){4})(cl([^(]+))
  * [DllImport(Library, EntryPoint = "$2")]\n$1$3
  */

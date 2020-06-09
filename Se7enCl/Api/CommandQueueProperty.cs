@@ -2,27 +2,26 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Se7en.OpenCl
+namespace Se7enCl.Api
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct ContextProperty
+    public struct CommandQueueProperty
     {
-        public static ContextProperty Zero { get; } = new ContextProperty(0);
+        public static CommandQueueProperty Zero { get; } = new CommandQueueProperty(0);
 
         private readonly uint _propertyName;
         private readonly IntPtr _propertyValue;
 
-        public ContextProperty(ContextProperties property, IntPtr value)
+        public CommandQueueProperty(CommandQueueProperties property, IntPtr value)
         {
             _propertyName = (uint)property;
             _propertyValue = value;
         }
 
-        public ContextProperty(ContextProperties property)
+        public CommandQueueProperty(CommandQueueProperties property)
         {
             _propertyName = (uint)property;
             _propertyValue = IntPtr.Zero;
         }
-
     }
 }

@@ -9,8 +9,13 @@ namespace Se7en.OpenCl.Api.Native
 
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clGetPlatformIDs")]
         public static extern ErrorCode GetPlatformIDs(uint numEntries,
-                                                         [Out] [MarshalAs(UnmanagedType.LPArray)] Platform[] platforms,
+                                                         [Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] Platform[] platforms,
                                                          out uint numPlatforms);
+
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clGetPlatformIDs")]
+        public static extern ErrorCode GetPlatformIDs(uint numEntries,
+                                                        [Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] IntPtr[] platforms,
+                                                        out uint numPlatforms);
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clGetPlatformInfo")]
         public static extern ErrorCode GetPlatformInfo(IntPtr platform,
                                                 PlatformInfo paramName,

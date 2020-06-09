@@ -111,7 +111,7 @@ namespace Se7en.OpenCl
             {
                 for (uint i = 0; i < count; i++)
                 {
-                    if ((err = Cl.SetKernelArgSVMPointer(Kernel, i, *(argsPtr + i))) != ErrorCode.Success)
+                    if ((err = Cl.SetKernelArgSVMPointer(Kernel, i, (argsPtr + i)->_handle)) != ErrorCode.Success)
                     {
                         throw new Exception($"{err}");
                     }
@@ -166,7 +166,7 @@ namespace Se7en.OpenCl
         /// Runing the GPU program
         /// </summary>
         /// <param name="workGroupSizePtr">image dimention in 3D</param>
-        /// <param name="workingDim">global_id(n) (n := { (1D := 1), (2D := 2), (3D := 3) }</param>
+        /// <param name="workingDim">get_global_id(n) (n := { (1D := 1), (2D := 2), (3D := 3) }</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Execute(IntPtr[] workGroupSizePtr, uint workingDim = 1)
         {
@@ -185,18 +185,13 @@ namespace Se7en.OpenCl
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Execute(IntPtr[] workGroupSizePtr, SvmPointer[] args, uint workingDim = 1)
         {
-            LockSvmForGPU(args);
-            
             SetSvmArgs(args);
-
             ErrorCode err;
             if ((err = Cl.EnqueueNDRangeKernel(CommandQueue, Kernel, workingDim, null, workGroupSizePtr, null, 0, null, out Event @event)) != ErrorCode.Success)
             {
                 throw new Exception(err.ToString());
             }
             @event.WaitForComplete();
-
-            UnlockSvmGPU(args);
         }
 
         /// <summary>

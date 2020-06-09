@@ -40,12 +40,12 @@ namespace Se7en.OpenCl
             _isLocked = false;
         }
 
-        internal void Lock(OpenClBridge bridge)
+        internal void Lock(OpenClBridge bridge, MapFlags flags = MapFlags.Read | MapFlags.Write)
         {
             if (!_isLocked)
             {
                 ErrorCode error;
-                if((error =  Cl.EnqueueSVMMap(bridge.CommandQueue, 1, MapFlags.Read | MapFlags.Write, _handle, new IntPtr(Length), 0, null, out Event @event)) != ErrorCode.Success) {
+                if((error =  Cl.EnqueueSVMMap(bridge.CommandQueue, 1, flags, _handle, new IntPtr(Length), 0, null, out Event @event)) != ErrorCode.Success) {
                     throw new Exception($"{error}");
                 }
                 @event.WaitForComplete();
@@ -91,7 +91,7 @@ namespace Se7en.OpenCl
         where T : unmanaged
     {
         internal readonly SvmPointer _pointer;
-        public readonly T* Pointer => (T*)_pointer;
+        public readonly T* Pointer => (T*)_pointer._handle;
 
         public T this[int offset]
         {
@@ -100,6 +100,7 @@ namespace Se7en.OpenCl
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *(Pointer + offset) = value;
         }
+
         public T this[int x, int y, int width]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -107,6 +108,7 @@ namespace Se7en.OpenCl
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => *(Pointer + (y * width) + x) = value;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SvmPointer(SvmPointer svmPointer)
         {

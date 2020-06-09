@@ -17,6 +17,14 @@ namespace Se7en.OpenCl.Api.Native
 
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateContext")]
         public static extern IntPtr CreateContext([In] [MarshalAs(UnmanagedType.LPArray)] ContextProperty[] properties,
+                                                   uint numDevices,
+                                                   [In] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] devices,
+                                                   ContextNotify pfnNotify,
+                                                   IntPtr userData,
+                                                   out ErrorCode errcodeRet);
+
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateContext")]
+        public static extern IntPtr CreateContext([In] [MarshalAs(UnmanagedType.LPArray)] ContextProperty[] properties,
                                                     uint numDevices,
                                                     [In] [MarshalAs(UnmanagedType.LPArray)] void* devices,
                                                     ContextNotify pfnNotify,

@@ -7,12 +7,19 @@ namespace Se7en.OpenCl.Api.Native
     public unsafe static partial class Cl
     {
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateProgramWithSource")]
-        public static extern IntPtr CreateProgramWithSource(Context context,
+        public static extern IntPtr CreateProgramWithSource(IntPtr context,
                                                            uint count,
                                                            [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr, SizeParamIndex = 1)] string[] strings,
                                                            [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 1)] IntPtr[] lengths,
                                                            out ErrorCode errcodeRet);
 
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clBuildProgram")]
+        public static extern ErrorCode BuildProgram(IntPtr program,
+                                                      uint numDevices,
+                                                      [In] [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.SysUInt, SizeParamIndex = 1)] IntPtr[] deviceList,
+                                                      [In] [MarshalAs(UnmanagedType.LPStr)] string options,
+                                                      ProgramNotify pfnNotify,
+                                                      IntPtr userData);
 
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clBuildProgram")]
         public static extern ErrorCode BuildProgram(IntPtr program,
@@ -21,6 +28,7 @@ namespace Se7en.OpenCl.Api.Native
                                                        [In] [MarshalAs(UnmanagedType.LPStr)] string options,
                                                        ProgramNotify pfnNotify,
                                                        IntPtr userData);
+
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clBuildProgram")]
         public static extern ErrorCode BuildProgram(IntPtr program,
                                                       uint numDevices,

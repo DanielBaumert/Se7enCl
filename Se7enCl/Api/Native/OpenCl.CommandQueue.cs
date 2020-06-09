@@ -1,4 +1,5 @@
 ﻿using Se7en.OpenCl.Api.Enum;
+using Se7enCl.Api;
 using System;
 using System.Runtime.InteropServices;
 
@@ -10,6 +11,12 @@ namespace Se7en.OpenCl.Api.Native
         public static extern CommandQueue CreateCommandQueue(IntPtr context, IntPtr device,
                                                         [MarshalAs(UnmanagedType.U8)] CommandQueueProperties properties,
                                                         [Out] [MarshalAs(UnmanagedType.I4)] out ErrorCode error);
+
+
+        [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clCreateCommandQueueWithProperties")]
+        public static extern CommandQueue CreateCommandQueueWithProperties(IntPtr context, IntPtr device,
+                                                      [MarshalAs(UnmanagedType.LPArray)] CommandQueueProperty[] properties,
+                                                      [Out] [MarshalAs(UnmanagedType.I4)] out ErrorCode error);
 
         [DllImport(InternalLibLoader.OpenCL, EntryPoint = "clGetCommandQueueInfo")]
         public static extern ErrorCode GetCommandQueueInfo(IntPtr commandQueue,

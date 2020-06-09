@@ -47,7 +47,6 @@ namespace Se7en.OpenCl
         public readonly bool IsFineGrainSystemSupported => (SvmCapabilities & SVMCapabilities.SvmFineGrainSystem) == SVMCapabilities.SvmFineGrainSystem;
         public readonly bool IsAtomicSupported => (SvmCapabilities & SVMCapabilities.SvmAtomics) == SVMCapabilities.SvmAtomics;
 
-
         /// <summary>
         //Ctor
         internal Device(IntPtr handle)
@@ -55,8 +54,6 @@ namespace Se7en.OpenCl
             Handle = handle;
             SVMCapabilities capabilities = Utils.GetTInfo<DeviceInfo, SVMCapabilities>(Handle, DeviceInfo.SvmCapabilities, Cl.GetDeviceInfo);
         }
-
-
 
         /// <summary>
         /// A unique device vendor identifier.<br/>

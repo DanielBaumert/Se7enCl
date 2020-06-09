@@ -1,6 +1,7 @@
 ﻿using Se7en.OpenCl.Api.Enum;
 using Se7en.OpenCl.Api.Native;
 using System;
+using System.Linq;
 
 namespace Se7en.OpenCl
 {
@@ -21,7 +22,7 @@ namespace Se7en.OpenCl
 
         static OpenClCompiler()
         {
-             Cl.GetPlatformIDs(0, null, out PlatformCount);
+             Cl.GetPlatformIDs(0, Platforms, out PlatformCount);
              Platforms = new Platform[PlatformCount];
              Cl.GetPlatformIDs(PlatformCount, Platforms, out _);
         }
@@ -74,7 +75,7 @@ namespace Se7en.OpenCl
         public SvmPointer<T> AllocSvmMemory<T>(long count)
            where T : unmanaged
         {
-            return new SvmPointer<T>(AllocSvmMemory(count * sizeof(T), (uint) sizeof(T)));
+            return new SvmPointer<T>(AllocSvmMemory(count * sizeof(T), 0));
         }
       
         /// <summary> 
